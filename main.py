@@ -1,6 +1,9 @@
 
 
 def debug(*args):
+    """
+    Debug print
+    """
     ret = ""
     for i in args:
         ret += str(i) + " "
@@ -18,7 +21,11 @@ def main():
         load=True)
     
     net = Net()
-        
+
+    clean_tensor = torch.Tensor()
+    noisy_tensor = torch.Tensor()
+    labels_tensor = torch.Tensor()
+
     for clean, noisy, labels in dl:
         clean_tensor = clean.clone().detach()
         noisy_tensor = noisy.clone().detach()
