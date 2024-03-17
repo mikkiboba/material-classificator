@@ -1,26 +1,57 @@
+from new_dataset_creation import create_dataset
+import time
+from net import NNet
+import torch.optim as optim
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
+import torch
+from debug import debug
 
 
-def debug(*args):
-    """
-    Debug print
-    """
-    ret = ""
-    for i in args:
-        ret += str(i) + " "
-    print(f'-- DEBUG {ret}')
+def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int = 1) -> tuple[torch.Tensor, torch.Tensor]:
+    dim_size = tensor.size(dimension)
+    split_size = int(dim_size * split_ratio)
+
+    dataset1 = tensor.narrow(dimension, 0, split_size)
+    dataset2 = tensor.narrow(dimension, split_size, dim_size - split_size)
+
+    return dataset1, dataset2
 
 
+def train(net: nn.Module, train_loader: DataLoader, optimizer: optim.Optimizer, criterion: nn.Module, device: torch.device, log_interval: int) -> None:
+    net.train()  # Set the network to training mode
+    total_loss = 0
+    for batch_idx, (clean, _, labels) in enumerate(train_loader):
+        clean, labels = clean.to(device), labels.to(device)
+
+        optimizer.zero_grad()  # Clear the gradients
+        output = net(clean)  # Forward pass
+        loss = criterion(output, labels)  # Compute the loss
+        loss.backward()  # Backward pass
+        optimizer.step()  # Update parameters
+
+        total_loss += loss.item()
+
+        if batch_idx % log_interval == 0:
+            print(f'Train Epoch: {batch_idx * len(clean)} / {len(train_loader.dataset)}\tLoss: {loss.item():.6f}')
+
+    avg_loss = total_loss / len(train_loader.dataset)
+    print(f'-- TRAINING AVERAGE LOSS: {avg_loss}')
 
 
+def main() -> None:
+    # Parameters
+    learning_rate = 0.01
+    batch_size = 1
+    n_epochs = 100
+    log_interval = 10
+    path = 'data'
+    torch.manual_seed(42)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def main():
-    now = time.time()
+    dl = create_dataset(plot=True, load=True)
 
-    dl = create_dataset(
-        plot=False,
-        load=True)
-    
-    net = Net()
+    net = NNet()
 
     clean_tensor = torch.Tensor()
     noisy_tensor = torch.Tensor()
@@ -30,66 +61,20 @@ def main():
         clean_tensor = clean.clone().detach()
         noisy_tensor = noisy.clone().detach()
         labels_tensor = labels.clone().detach()
-    dataset = TensorDataset(clean_tensor, noisy_tensor, labels_tensor)
-    
-    train_dataset, test_dataset = random_split(
-        dataset=dataset,
-        lengths=[len(dataset) - int(len(dataset)*.2), int(len(dataset)*.2)]
-    )
-        
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr=.001)
-    
-    batch_size = 1
-    train_loader = DataLoader(
-        dataset=train_dataset,
-        batch_size=batch_size,
-        shuffle=True
-    )
-    test_loader = DataLoader(
-        dataset=test_dataset,
-        batch_size=batch_size,
-        shuffle=False
-    )
-    
-    num_epochs = 5
-    
-    
-    for epoch in range(num_epochs):  # num_epochs is defined by you
-        net.train()
-        running_loss = 0.0
-        for batch_idx, (inputs, _, labels) in enumerate(train_loader):
-            debug(inputs.shape)
-            optimizer.zero_grad()  # Zero the gradients
-            
-            outputs = net(inputs)  # Forward pass
-            loss = criterion(outputs, labels)  # Compute loss
-            loss.backward()  # Backward pass
-            optimizer.step()  # Optimize
-            
-            running_loss += loss.item()  # Accumulate loss
-            
-            print(f'Epoch: {epoch+1}, Batch: {batch_idx+1}, Loss: {running_loss / (batch_idx+1)}')
 
-        net.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for batch_idx, (inputs, _, labels) in enumerate(test_loader):
-                outputs = net(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        print(f'Accuracy of the network on the test set: {100 * correct / total}%')
-    print(f'-- EXECUTION TIME: {time.time()-now} seconds')
+    clean_train, clean_test = split_tensor(clean_tensor)
+    noisy_train, noisy_test = split_tensor(noisy_tensor)
+
+    train_dataset = TensorDataset(clean_train, noisy_train, labels_tensor)
+    test_dataset = TensorDataset(clean_test, noisy_test, labels_tensor)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
 
 
 if __name__ == "__main__":
-    from new_dataset_creation import create_dataset
-    import time
-    from net import Net
-    import torch.optim as optim
-    import torch.nn as nn
-    from torch.utils.data import random_split,DataLoader,TensorDataset
-    import torch
+    now = time.time()
     main()
+    print(f'-- EXECUTION TIME: {time.time()-now} seconds')

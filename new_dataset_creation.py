@@ -16,6 +16,8 @@ from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 import pickle
 import os
+from debug import debug
+
 
 class SignalDataset(Dataset):
         def __init__(self, clean_data, noisy_data, labels):
@@ -33,11 +35,13 @@ class SignalDataset(Dataset):
             label = self.labels[idx]
             return clean_signal, noisy_signal, label
 
+
 def error(name: str, file: str, *args):
-    ret = f"{name:15}: {file:25} "
+    ret = f"!- {name:15}: {file:25} "
     for i in args:
         ret += f'{i:<15}'
     print(ret)
+
 
 def fix_length(lista1:list,lista2:list,same:bool=False) -> tuple:
     """
@@ -70,13 +74,27 @@ def fix_length(lista1:list,lista2:list,same:bool=False) -> tuple:
         l2[i] = l2[i][:min_val2]
     return l1,l2
 
-def plot_single(materials:list,dataloader:DataLoader):
+
+def plot_single(materials: list, dataloader: DataLoader):
     """
     Plot the materials' data one by one (clean and noisy)
     """
-    
-    PLOT_PATH = 'plots/new/singolo'
+    def plot(data, title: str, file_name: str) -> None:
+        for i in range(len(labels_dataset)):
+            list_clean = data[i].detach().numpy()
+            for el in list_clean:
+                plt.plot(el)
+            plt.xlabel('subcarrier')
+            plt.ylabel('amplitude')
+            plt.title(f'{materials[labels_dataset[i]]} CLEAN')
+            plt.savefig(f'{path}/{file_name}{i}')
+            plt.close()
+
+    path = 'plots/new/singolo'
     for clean_data, noisy_data, labels_dataset in dataloader:
+        plot(clean_data, "CLEAN", 'c')
+        plot(noisy_data, "NOISY", 'n')
+        """
             for i in range(len(labels_dataset)):
                 list_clean = clean_data[i].detach().numpy()
                 for el in list_clean:
@@ -84,7 +102,7 @@ def plot_single(materials:list,dataloader:DataLoader):
                 plt.xlabel('subcarrier')
                 plt.ylabel('amplitude')
                 plt.title(f'{materials[labels_dataset[i]]} CLEAN')
-                plt.savefig(f'{PLOT_PATH}/c{i}')
+                plt.savefig(f'{path}/c{i}')
                 plt.close()
             for i in range(len(labels_dataset)):
                 list_noisy = noisy_data[i].detach().numpy()
@@ -93,15 +111,17 @@ def plot_single(materials:list,dataloader:DataLoader):
                 plt.xlabel('subcarrier')
                 plt.ylabel('amplitude')
                 plt.title(f'{materials[labels_dataset[i]]} NOISY')
-                plt.savefig(f'{PLOT_PATH}/n{i}')
+                plt.savefig(f'{path}/n{i}')
                 plt.close()  
+"""
+
 
 def plot_both(materials:list,dataloader:DataLoader):
     """
     Plot the materials' data putting together clean and noisy in the same plot.
     """
     
-    PLOT_PATH = 'plots/new/both'
+    path = 'plots/new/both'
     for clean_data, noisy_data, labels_dataset in dataloader:
         for i in range(len(labels_dataset)):
             figure, axis = plt.subplots(1,2)
@@ -118,8 +138,9 @@ def plot_both(materials:list,dataloader:DataLoader):
             axis[1].set_xlabel('subcarrier')
             axis[1].set_ylabel('amplitude')
             axis[1].set_title(f'{materials[labels_dataset[i]]} NOISY')
-            plt.savefig(f'{PLOT_PATH}/cn{i}')
+            plt.savefig(f'{path}/cn{i}')
             plt.close() 
+
 
 def create_dataset(plot:bool=False,both:bool=False,dlen=True,load=True):
     PATH_DATASET = 'dataset_file.pickle'
@@ -213,9 +234,10 @@ def create_dataset(plot:bool=False,both:bool=False,dlen=True,load=True):
         # 1.5 - Build Dataset with Signal Dataset Class
         dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
         # 1.6 - Define Parameters
-        batch_size = 15
+        batch_size = 1
         # 1.7 - Create Dataloader
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        debug(f"{len(dataloader)=}")
         print(f'-- DATASET CREATED')
         with open(PATH_DATASET, 'wb') as file:
             pickle.dump(dataloader,file)
