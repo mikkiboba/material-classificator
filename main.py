@@ -55,6 +55,8 @@ def main() -> None:
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
+    debug(train_loader.dataset[0][2])
+
 
 if __name__ == "__main__":
     now = time.time()
