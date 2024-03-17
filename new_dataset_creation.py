@@ -36,14 +36,40 @@ class SignalDataset(Dataset):
             return clean_signal, noisy_signal, label
 
 
-def error(name: str, file: str, *args):
+def error(name: str, file: str, *args) -> None:
     ret = f"!- {name:15}: {file:25} "
     for i in args:
         ret += f'{i:<15}'
     print(ret)
 
 
-def fix_length(lista1:list,lista2:list,same:bool=False) -> tuple:
+def get_values(collector: list, path: str) -> list:
+    """
+    Get the signal values from a file
+    """
+    file_name = path[path.find('/')+1:]
+    with open(path, 'r') as file:
+        for idx, line in enumerate(file):
+            try:
+                values = line.strip().split(',')[25]
+            except IndexError:
+                error("COLUMN ERROR", f'{file_name}', f'line {idx+1}')
+                continue
+            values = values[1:len(values)-2].split(' ')
+            row = []
+            for idx_val, v in enumerate(values):
+                try:
+                    row.append(float(v))
+                except ValueError:
+                    error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"', f'position: {idx_val}')
+            if len(row) == 128:
+                collector.append(row)
+            else:
+                error("LENGTH ERROR", f'{file_name}', f'line {idx+1}', f'length: {len(row)}')
+    return collector
+
+
+def fix_length(lista1: list, lista2: list, same: bool = False) -> tuple[list, list]:
     """
     Fix the len of elements inside the lists.
     If `same` has value `True` then the two lists will have the same amount of elements.
@@ -72,10 +98,10 @@ def fix_length(lista1:list,lista2:list,same:bool=False) -> tuple:
         l1[i] = l1[i][:min_val1]
     for i in range(len(l2)):
         l2[i] = l2[i][:min_val2]
-    return l1,l2
+    return l1, l2
 
 
-def plot_single(materials: list, dataloader: DataLoader):
+def plot_single(materials: list, dataloader: DataLoader) -> None:
     """
     Plot the materials' data one by one (clean and noisy)
     """
@@ -94,29 +120,9 @@ def plot_single(materials: list, dataloader: DataLoader):
     for clean_data, noisy_data, labels_dataset in dataloader:
         plot(clean_data, "CLEAN", 'c')
         plot(noisy_data, "NOISY", 'n')
-        """
-            for i in range(len(labels_dataset)):
-                list_clean = clean_data[i].detach().numpy()
-                for el in list_clean:
-                    plt.plot(el)
-                plt.xlabel('subcarrier')
-                plt.ylabel('amplitude')
-                plt.title(f'{materials[labels_dataset[i]]} CLEAN')
-                plt.savefig(f'{path}/c{i}')
-                plt.close()
-            for i in range(len(labels_dataset)):
-                list_noisy = noisy_data[i].detach().numpy()
-                for el in list_noisy:
-                    plt.plot(el)
-                plt.xlabel('subcarrier')
-                plt.ylabel('amplitude')
-                plt.title(f'{materials[labels_dataset[i]]} NOISY')
-                plt.savefig(f'{path}/n{i}')
-                plt.close()  
-"""
 
 
-def plot_both(materials:list,dataloader:DataLoader):
+def plot_both(materials: list, dataloader: DataLoader) -> None:
     """
     Plot the materials' data putting together clean and noisy in the same plot.
     """
@@ -124,8 +130,8 @@ def plot_both(materials:list,dataloader:DataLoader):
     path = 'plots/new/both'
     for clean_data, noisy_data, labels_dataset in dataloader:
         for i in range(len(labels_dataset)):
-            figure, axis = plt.subplots(1,2)
-            figure.set_size_inches(10,5)
+            figure, axis = plt.subplots(1, 2)
+            figure.set_size_inches(10, 5)
             list_clean = clean_data[i].detach().numpy()
             list_noisy = noisy_data[i].detach().numpy()
             for el in list_clean:
@@ -142,105 +148,47 @@ def plot_both(materials:list,dataloader:DataLoader):
             plt.close() 
 
 
-def create_dataset(plot:bool=False,both:bool=False,dlen=True,load=True):
-    PATH_DATASET = 'dataset_file.pickle'
-    materials = [ "empty","acrylic","aluminium","brass","copper","lignum_vitae","nylon","oak","pine","pp","pvc","rose_wood","steel"]
+def create_dataset(plot: bool = False, both: bool = False, same_length: bool = True, load: bool = True) -> DataLoader:
+    path_dataset = 'dataset_file.pickle'
+    materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
+                 "pvc", "rose_wood", "steel"]
     
-    if os.path.exists(PATH_DATASET) and load:
-        with open(PATH_DATASET, 'rb') as file:
+    if os.path.exists(path_dataset) and load:
+        with open(path_dataset, 'rb') as file:
             dataloader = pickle.load(file)
         print(f'-- DATASET LOADED')
         
     else:
-        tests = ["test1.csv","test2.csv","test3.csv","test4.csv","test5.csv","test6.csv","test7.csv","test8.csv","test9.csv","test10.csv"]
+        tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
+                 "test9.csv", "test10.csv"]
         clean_dataset = []
-        noisy_dataset=[]
-        all_labels=[]
+        noisy_dataset = []
+        all_labels = []
 
         print(f'-- DATASET CREATION...')
-        for i,m in enumerate(materials):
-                clean,noisy = [],[]
-                all_labels.append(i) 
-                for t in tests:
-                    # 1.2.1 - Add object label to list of all labels
-                    #all_labels.append(i) # ! fuori dal for, aggiunto prima
-                    # 1.2.2 - Case 1) Clean data
-                    clean_path = "complete_dataset/" + str(m) + "/with/" + str(t)
-                    #clean = [] # ! fuori dal for, aggiunto prima
-                    with open(clean_path, 'r') as file:
-                        for idx,line in enumerate(file):
-                            try:
-                                values = line.strip().split(',')[25]
-                            except:
-                                #print(f'{"COLUMN ERROR:":<15} in {str(m)}/with/{str(t)} line {idx+1}') #* error if it can't find the 25th column
-                                error("COLUMN ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}')
-                                continue
-                            values = values[1:len(values)-2].split(' ')
-                            row = []
-                            for i,v in enumerate(values):
-                                try:
-                                    row.append(float(v))
-                                except:
-                                    #print(f'{"VALUE ERROR:":<15} value "{v}" in {str(m)}/with/{str(t)} line {idx+1} {"":<5} -> position: {i}') #* error if the value can't be casted to float
-                                    error("VALUE  ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}', f'value: "{v}"', f'position: {i}')
-                            if len(row) == 128:
-                                clean.append(row)
-                            else:
-                                #print(f'{"LENGTH ERROR:":<15} in {str(m)}/with/{str(t)} line {idx+1} {"":<5} -> actual length: {len(row)}') #* error if the number of values is different than 12
-                                error("LENGTH ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}', f'length: {len(row)}')
-                    #clean=torch.tensor(clean) #! fuori dal for, aggiunto dopo
-                    #clean_dataset.append(clean) #! fuori dal for, aggiunto dopo
-                    # 1.2.3 - Case 2) Noisy data
-                    noisy_path = "complete_dataset/" + str(m) + "/without/" + str(t)
-                    #noisy = [] #! fuori dal for, aggiunto prima
-                    with open(noisy_path, 'r') as file:
-                        for idx,line in enumerate(file):
-                            try:
-                                values = line.strip().split(',')[25]
-                            except:
-                                #print(f'{"COLUMN ERROR:":<15}in {str(m)}/without/{str(t)} line {idx+1}') #* error if it can't find the 25th column
-                                error("COLUMN ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}')
-                            values = values[1:len(values)-2].split(' ')
-                            row = []
-                            for i,v in enumerate(values):
-                                try:
-                                    row.append(float(v))
-                                except:
-                                    #print(f'{"VALUE ERROR:":<15} value "{v}" in {str(m)}/without/{str(t)} line {idx+1} {"":<5} -> position: {i}') #* error if the value can't be casted to float
-                                    error("VALUE  ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}', f'value: "{v}"', f'position: {i}')
-                            if len(row) == 128:
-                                noisy.append(row)
-                            else:
-                                #print(f'{"LENGTH ERROR:":<15} in {str(m)}/with/{str(t)} line {idx+1} {"":<5} -> actual length: {len(row)}') #* error if the number of values is different than 128
-                                error("LENGTH ERROR", f'{str(m)}/with/{str(t)}', f'line {idx+1}', f'length: {len(row)}')
-                    #noisy = torch.tensor(noisy) #! fuori dal for, aggiunto dopo
-                    #noisy_dataset.append(noisy) #! fuori dal for, aggiunto dopo
-                #! mettendoli qui si avrà che, quando verrà fatto torch.stack() avranno shape di [13,14432,128] (esempio)
-                clean = torch.tensor(clean)
-                clean_dataset.append(clean)
-                noisy = torch.tensor(noisy)
-                noisy_dataset.append(noisy)
-        # 1.3 - Compose clean and noisy dataset
-        clean_dataset, noisy_dataset = fix_length(clean_dataset,noisy_dataset,same=dlen) #! torch.stack richeide che le liste dentro clean_dataset e noisy_dataset debbano avere lo stesso numero di elementi  
-        clean_dataset=torch.stack(clean_dataset)
-        noisy_dataset=torch.stack(noisy_dataset)
-        #clean_dataset = torch.permute(clean_dataset, (0,2,1))
-        #noisy_dataset = torch.permute(noisy_dataset, (0,2,1))
+        for i, m in enumerate(materials):
+            clean, noisy = [],[]
+            all_labels.append(i)
+            for t in tests:
+                clean_path = "complete_dataset/" + str(m) + "/with/" + str(t)
+                clean = get_values(clean, clean_path)
+                noisy_path = "complete_dataset/" + str(m) + "/without/" + str(t)
+                noisy = get_values(noisy, noisy_path)
+            clean = torch.tensor(clean)
+            clean_dataset.append(clean)
+            noisy = torch.tensor(noisy)
+            noisy_dataset.append(noisy)
 
-        #! In questo modo, clean_dataset e noisy_dataset avranno 14000+ tensor per ogni materiale
+        clean_dataset, noisy_dataset = fix_length(clean_dataset, noisy_dataset, same=same_length)
+        clean_dataset = torch.stack(clean_dataset)
+        noisy_dataset = torch.stack(noisy_dataset)
 
-        # 1.4 - Define Dataset Class
-        
-        # 1.5 - Build Dataset with Signal Dataset Class
         dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
-        # 1.6 - Define Parameters
         batch_size = 1
-        # 1.7 - Create Dataloader
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-        debug(f"{len(dataloader)=}")
         print(f'-- DATASET CREATED')
-        with open(PATH_DATASET, 'wb') as file:
-            pickle.dump(dataloader,file)
+        with open(path_dataset, 'wb') as file:
+            pickle.dump(dataloader, file)
  
     if not plot:
         return dataloader

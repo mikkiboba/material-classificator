@@ -1,10 +1,13 @@
-from new_dataset_creation import create_dataset
 import time
-from net import NNet
-import torch.optim as optim
-import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+
+from net import NNet
+from new_dataset_creation import create_dataset
+
 from debug import debug
 
 
@@ -18,27 +21,6 @@ def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int 
     return dataset1, dataset2
 
 
-def train(net: nn.Module, train_loader: DataLoader, optimizer: optim.Optimizer, criterion: nn.Module, device: torch.device, log_interval: int) -> None:
-    net.train()  # Set the network to training mode
-    total_loss = 0
-    for batch_idx, (clean, _, labels) in enumerate(train_loader):
-        clean, labels = clean.to(device), labels.to(device)
-
-        optimizer.zero_grad()  # Clear the gradients
-        output = net(clean)  # Forward pass
-        loss = criterion(output, labels)  # Compute the loss
-        loss.backward()  # Backward pass
-        optimizer.step()  # Update parameters
-
-        total_loss += loss.item()
-
-        if batch_idx % log_interval == 0:
-            print(f'Train Epoch: {batch_idx * len(clean)} / {len(train_loader.dataset)}\tLoss: {loss.item():.6f}')
-
-    avg_loss = total_loss / len(train_loader.dataset)
-    print(f'-- TRAINING AVERAGE LOSS: {avg_loss}')
-
-
 def main() -> None:
     # Parameters
     learning_rate = 0.01
@@ -49,7 +31,7 @@ def main() -> None:
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dl = create_dataset(plot=True, load=True)
+    dl = create_dataset(plot=False, load=True)
 
     net = NNet()
 
