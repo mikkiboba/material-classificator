@@ -10,7 +10,7 @@ class NNet(nn.Module):
         self.conv1 = nn.Conv1d(in_channels=128, out_channels=64, kernel_size=3)
         self.conv2 = nn.Conv1d(in_channels=64, out_channels=32, kernel_size=3)
         self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(in_features=5770, out_features=13)  # out = numero di materiali
+        self.fc1 = nn.Linear(in_features=184640, out_features=13)  # out = numero di materiali
 
     def forward(self, x: torch.Tensor):
         x = torch.permute(x, (0, 2, 1))
@@ -20,3 +20,6 @@ class NNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         return x
+
+    def _linear_in_features(self):
+        pass

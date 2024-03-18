@@ -184,7 +184,7 @@ def create_dataset(plot: bool = False, both: bool = False, same_length: bool = T
         noisy_dataset = torch.stack(noisy_dataset)
 
         dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
-        batch_size = 1
+        batch_size = 32
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
         print(f'-- DATASET CREATED')
         with open(path_dataset, 'wb') as file:
@@ -194,7 +194,7 @@ def create_dataset(plot: bool = False, both: bool = False, same_length: bool = T
         return dataloader
     
     print(f'-- PLOTTING...')
-    plot_both(materials,dataloader) if both else plot_single(materials,dataloader)
+    plot_both(materials, dataloader) if both else plot_single(materials, dataloader)
     print(f'-- PLOTTING DONE')
     
     return dataloader
