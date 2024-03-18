@@ -70,8 +70,6 @@ def main() -> None:
 
     dl = create_dataset(plot=False, load=True)
 
-    net = NNet()
-
     clean_tensor = torch.Tensor()
     noisy_tensor = torch.Tensor()
     labels_tensor = torch.Tensor()
@@ -83,6 +81,8 @@ def main() -> None:
 
     clean_train, clean_test = split_tensor(clean_tensor)
     noisy_train, noisy_test = split_tensor(noisy_tensor)
+    
+    net = NNet(clean_train.size(1), clean_test.size(1))
 
     train_dataset = TensorDataset(clean_train, noisy_train, labels_tensor)
     test_dataset = TensorDataset(clean_test, noisy_test, labels_tensor)
