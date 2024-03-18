@@ -5,12 +5,13 @@ from debug import debug
 
 
 class NNet(nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels_train: int, in_channels_test: int, kernel_size: int = 3):
         super(NNet, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels=128, out_channels=64, kernel_size=3)
-        self.conv2 = nn.Conv1d(in_channels=64, out_channels=32, kernel_size=3)
+        self.conv1 = nn.Conv1d(in_channels=128, out_channels=64, kernel_size=kernel_size)
+        self.conv2 = nn.Conv1d(in_channels=64, out_channels=32, kernel_size=kernel_size)
         self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(in_features=184640, out_features=13)  # out = numero di materiali
+        self.fc_train = nn.Linear(in_features=(int(in_channels_train/2) - (kernel_size-1)) * 32, out_features=13)  # out = numero di materiali
+        self.fc_test = nn.Linear(in_features=(int(in_channels_test/2) - (kernel_size-1)) * 32, out_features=13)  # out = numero di materiali
 
     def forward(self, x: torch.Tensor):
         x = torch.permute(x, (0, 2, 1))
@@ -18,8 +19,8 @@ class NNet(nn.Module):
         x = F.relu(self.conv2(x))
         x = self.pool(x)
         x = torch.flatten(x, 1)
-        x = self.fc1(x)
+        try:
+            x = self.fc_train(x)
+        except RuntimeError:
+            x = self.fc_test(x)
         return x
-
-    def _linear_in_features(self):
-        pass
