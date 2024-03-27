@@ -25,35 +25,10 @@ def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int 
 def train(net: nn.Module, train_loader: DataLoader, optimizer: optim.Adam, log_interval: int, epoch: int,
           train_losses: list, train_counter: list, criterion: nn.CrossEntropyLoss) -> None:
     net.train()
-    for batch_idx, (data, target, labels) in enumerate(train_loader):
-        optimizer.zero_grad()  # Clear existing gradients
-        debug(f'{data.shape=}')
-        output = net(data)  # Forward pass
-        loss = criterion(output, labels)  # Compute loss
-        loss.backward()  # Backpropagation
-        optimizer.step()  # Update model parameters
-
-        if batch_idx % log_interval == 0:
-            print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)}'
-                  f' ({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}')
-            train_losses.append(loss.item())
-            train_counter.append((batch_idx*64) + ((epoch-1)*len(train_loader.dataset)))
 
 
 def test(net: nn.Module, test_loader: DataLoader, criterion: nn.Module) -> None:
     net.eval()
-    test_loss = 0
-    correct = 0
-    with torch.no_grad():  # No gradient computation
-        for data, target, labels in test_loader:
-            output = net(data)
-            test_loss += criterion(output, labels).item()  # Sum up batch loss
-            pred = output.argmax(dim=1, keepdim=True)  # Get the index of the max log-probability
-            correct += pred.eq(labels.view_as(pred)).sum().item()
-
-    test_loss /= len(test_loader.dataset)
-    print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)}'
-          f' ({100. * correct / len(test_loader.dataset):.0f}%)\n')
 
 
 def main() -> None:
