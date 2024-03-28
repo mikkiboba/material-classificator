@@ -21,6 +21,7 @@ def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int 
 
     return dataset1, dataset2
 
+#TODO: Devo fare le funzioni di training
 
 def train(net: nn.Module, train_loader: DataLoader, optimizer: optim.Adam, log_interval: int, epoch: int,
           train_losses: list, train_counter: list, criterion: nn.CrossEntropyLoss) -> None:
@@ -32,8 +33,7 @@ def test(net: nn.Module, test_loader: DataLoader, criterion: nn.Module) -> None:
 
 
 def main() -> None:
-    # Parameters
-    learning_rate = 0.01
+    learning_rate = 0.0001
     batch_size = 1
     n_epochs = 10
     log_interval = 1
@@ -51,27 +51,21 @@ def main() -> None:
         clean_tensor = clean.clone().detach()
         noisy_tensor = noisy.clone().detach()
         labels_tensor = labels.clone().detach()
-
+        
     clean_train, clean_test = split_tensor(clean_tensor)
     noisy_train, noisy_test = split_tensor(noisy_tensor)
-
-    net = NNet(clean_train.size(1), clean_test.size(1))
+    net = NNet(clean_train.size(1), clean_test.size(1)) #? 1DCnn
 
     train_dataset = TensorDataset(clean_train, noisy_train, labels_tensor)
     test_dataset = TensorDataset(clean_test, noisy_test, labels_tensor)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
-    train_losses = []
-    train_counter = []
-
-    test(net, test_loader, criterion)
-    for epoch in range(1, n_epochs+1):
-        train(net, train_loader, optimizer, log_interval, epoch, train_losses, train_counter, criterion)
-        test(net, test_loader, criterion)
+    #TODO: Qui dovrebbe andarci training e test
+    #? come si deve fare il train, devo fare due training diversi per clean e noisy?
 
 
 if __name__ == "__main__":
