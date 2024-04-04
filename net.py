@@ -35,7 +35,6 @@ class NNet(nn.Module):
         x = self.dropout(x)
 
         #x = F.softmax(x, dim=0) lo fa crossentropyloss
-        # nuovo commento
 
         return x
 
