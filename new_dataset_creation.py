@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import pickle
 import os
 from debug import debug
+from sys import exit
 
 
 class SignalDataset(Dataset):
@@ -180,8 +181,6 @@ def create_dataset(plot: bool = False, both: bool = False, same_length: bool = T
             noisy_dataset.append(noisy)
 
         clean_dataset, noisy_dataset = fix_length(clean_dataset, noisy_dataset, same=same_length)
-        clean_dataset = torch.stack(clean_dataset)
-        noisy_dataset = torch.stack(noisy_dataset)
 
         dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
         batch_size = 32 #! (16-32) batch size = 32 -> le classi sono 13 (i materiali) quindi non saprei quale sarebbe il 

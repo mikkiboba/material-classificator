@@ -10,6 +10,7 @@ from net import NNet
 from new_dataset_creation import create_dataset
 
 from debug import debug
+import sys
 
 
 def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int = 1) -> tuple[torch.Tensor, torch.Tensor]:
@@ -23,13 +24,39 @@ def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int 
 
 #TODO: Devo fare le funzioni di training
 
-def train(net: nn.Module, train_loader: DataLoader, optimizer: optim.Adam, log_interval: int, epoch: int,
-          train_losses: list, train_counter: list, criterion: nn.CrossEntropyLoss) -> None:
-    net.train()
+def train(dataloader: DataLoader, model: NNet, loss_fn: nn.CrossEntropyLoss, optimizer: torch.optim.Optimizer, batch_size: int, log_interval: int = 1):
+    size = len(dataloader.dataset)
+    model.train()
+    
+    for batch_idx, (data, _, target) in enumerate(dataloader):
+        pred = model(data)
+        loss = loss_fn(pred, target)
+        loss.backward()
+        
+        optimizer.step()
+        optimizer.zero_grad()
+        
+        if batch_idx % log_interval == 0:
+            loss, current = loss.item(), batch_idx * batch_size + len(data)
+            print(f'loss: {loss:>7f} [{current:>5d}/{size:>5d}]')
 
 
-def test(net: nn.Module, test_loader: DataLoader, criterion: nn.Module) -> None:
-    net.eval()
+def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss) -> None:
+    model.eval()
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    test_loss, correct = 0, 0
+    
+    with torch.no_grad():
+        for data, _, target in dataloader:
+            pred = model(data)
+            test_loss += loss_fn(pred, target).item()
+            correct += (pred.argmax(1) == target).type(torch.float).sum().item()
+    
+    test_loss /= num_batches
+    correct /= size
+    
+    print(f'Test error: \n Accuracy: {(100*correct):>0.1f}%, avg loss: {test_loss:>8f} \n')
 
 
 def main() -> None:
@@ -41,7 +68,9 @@ def main() -> None:
     torch.manual_seed(42)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    dl = create_dataset(plot=False, load=True)
+    dl = create_dataset(plot=False, load=False)
+    
+    # unreavle
 
     clean_tensor = torch.Tensor()
     noisy_tensor = torch.Tensor()
@@ -66,6 +95,10 @@ def main() -> None:
 
     #TODO: Qui dovrebbe andarci training e test
     #? come si deve fare il train, devo fare due training diversi per clean e noisy?
+    for epoch in range(n_epochs):
+        print(f'Epoch: {epoch+1}\n')
+        train(dataloader=train_loader, model=net, loss_fn=criterion, optimizer=optimizer, batch_size=batch_size, log_interval=log_interval)
+        test(dataloader=test_loader, model=net, loss_fn=criterion)
 
 
 if __name__ == "__main__":
