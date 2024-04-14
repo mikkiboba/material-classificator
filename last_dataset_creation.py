@@ -1,16 +1,3 @@
-
-# ? Da discutere per il meet
-# ? 1. modificato completamente il codice, devo controllare se i risultati sono giusti
-    # ? 1.1. non ho modificato i file di test
-    # ?     ho solo aggiunto dei controlli che mi dicono a in quale file e in quale linea vengono trovati gli errori
-    # ? 1.2. controllare se i nuovi grafici siano corretti
-# ? 2. ho fatto qualche ricerca sulle classificazioni dei segnali
-    # ? 2.1. c'è poca roba pubblicata, molte cose sono su youtube
-    # ? 2.2. i modelli più utilizzati sono le RNN, LTSM (e combinazioni di esse)
-    # ? 2.3. chiedere informazioni sul random forest, possibile utilizzarlo?
-
-
-# 0 - Imports
 import torch
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
@@ -19,22 +6,23 @@ import os
 from debug import debug
 from sys import exit
 
+# TODO: devo restituire 2 tipi di dataset
+# TODO: 1. dataset clean e dataset noisy
+# TODO: 2. dataset clean + noisy
+
 
 class SignalDataset(Dataset):
-        def __init__(self, clean_data, noisy_data, labels):
-            # nb: in this way data is paired
-            self.clean_data = clean_data
-            self.noisy_data = noisy_data
-            self.labels = labels
+    def __init__(self, clean_data, labels):
+        self.clean_data = clean_data
+        self.labels = labels
 
-        def __len__(self):
-            return len(self.clean_data)
+    def __len__(self):
+        return len(self.clean_data)
 
-        def __getitem__(self, idx):
-            clean_signal = self.clean_data[idx]
-            noisy_signal = self.noisy_data[idx]
-            label = self.labels[idx]
-            return clean_signal, noisy_signal, label
+    def __getitem__(self, idx):
+        clean_signal = self.clean_data[idx]
+        label = self.labels[idx]
+        return clean_signal, label
 
 
 def error(name: str, file: str, *args) -> None:
@@ -44,7 +32,7 @@ def error(name: str, file: str, *args) -> None:
     print(ret)
 
 
-def get_values(collector: list, path: str) -> list:
+def get_values(collector: list, labels: list, material_idx: int, path: str) -> tuple[list, list]:
     """
     Get the signal values from a file
     """
@@ -65,41 +53,10 @@ def get_values(collector: list, path: str) -> list:
                     error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"', f'position: {idx_val}')
             if len(row) == 128:
                 collector.append(row)
+                labels.append(material_idx)
             else:
                 error("LENGTH ERROR", f'{file_name}', f'line {idx+1}', f'length: {len(row)}')
-    return collector
-
-
-def fix_length(lista1: list, lista2: list, same: bool = False) -> tuple[list, list]:
-    """
-    Fix the len of elements inside the lists.
-    If `same` has value `True` then the two lists will have the same amount of elements.
-    """
-    
-    l1 = lista1
-    l2 = lista2
-        
-    min_val1 = len(l1[0])
-    for i in range(1,len(l1)):
-        if len(l1[i]) < min_val1:
-            min_val1 = len(l1[i])
-    min_val2 = len(l2[0])
-    for i in range(1,len(l2)):
-        if len(l2[i]) < min_val2:
-            min_val2 = len(l2[i])
-        
-    if same:
-        min_val = min(min_val1,min_val2)
-        for i in range(len(l1 if min_val1 == min_val else l2)):
-            l1[i] = l1[i][:min_val]
-            l2[i] = l2[i][:min_val]
-        return l1,l2
-
-    for i in range(len(l1)):
-        l1[i] = l1[i][:min_val1]
-    for i in range(len(l2)):
-        l2[i] = l2[i][:min_val2]
-    return l1, l2
+    return collector, labels
 
 
 def plot_single(materials: list, dataloader: DataLoader) -> None:
@@ -149,53 +106,74 @@ def plot_both(materials: list, dataloader: DataLoader) -> None:
             plt.close() 
 
 
-def create_dataset(plot: bool = False, both: bool = False, same_length: bool = True, load: bool = True) -> DataLoader:
-    path_dataset = 'dataset_file.pickle'
-    materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
-                 "pvc", "rose_wood", "steel"]
-    
-    if os.path.exists(path_dataset) and load:
-        with open(path_dataset, 'rb') as file:
-            dataloader = pickle.load(file)
-        print(f'-- DATASET LOADED')
-        
-    else:
-        tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
-                 "test9.csv", "test10.csv"]
-        clean_dataset = []
-        noisy_dataset = []
-        all_labels = []
+def get_dataset(path: str, load: bool) -> DataLoader | None:
+    if load and os.path.exists(path):
+        with open(path, 'rb') as file:
+            print(f'-- DATASET LOADED')
+            return pickle.load(file)
+    return None
 
-        print(f'-- DATASET CREATION...')
+
+def create_dataset_separate(materials: list[str], tests: list[str], load: bool) -> tuple[Dataset, Dataset]:
+    path_dataset_clean = 'dataloaders/clean_dataset_file.pickle'
+    path_dataset_noisy = 'dataloaders/noisy_dataset_file.pickle'
+    clean_dataset = get_dataset(path_dataset_clean, load)
+    noisy_dataset = get_dataset(path_dataset_noisy, load)
+
+    if clean_dataset is None or noisy_dataset is None:
+        print(f'-- SEPARATE DATASET CREATION...')
+
+        clean_labels, noisy_labels = [], []
+        clean, noisy = [], []
+
         for i, m in enumerate(materials):
-            clean, noisy = [],[]
-            all_labels.append(i)
             for t in tests:
                 clean_path = "complete_dataset/" + str(m) + "/with/" + str(t)
-                clean = get_values(clean, clean_path)
+                clean, clean_labels = get_values(clean, clean_labels, i, clean_path)
                 noisy_path = "complete_dataset/" + str(m) + "/without/" + str(t)
-                noisy = get_values(noisy, noisy_path)
-            clean = torch.tensor(clean)
-            clean_dataset.append(clean)
-            noisy = torch.tensor(noisy)
-            noisy_dataset.append(noisy)
+                noisy, noisy_labels = get_values(noisy, noisy_labels, i, noisy_path)
 
-        clean_dataset, noisy_dataset = fix_length(clean_dataset, noisy_dataset, same=same_length)
+        clean = torch.tensor(clean)
+        noisy = torch.tensor(noisy)
 
-        dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
-        batch_size = 32
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+        clean_dataset = SignalDataset(clean, clean_labels)
+        noisy_dataset = SignalDataset(noisy, clean_labels)
+
+        with open(path_dataset_clean, 'wb') as file:
+            pickle.dump(clean_dataset, file)
+        with open(path_dataset_noisy, 'wb') as file:
+            pickle.dump(noisy_dataset, file)
+
         print(f'-- DATASET CREATED')
+
+    return clean_dataset, noisy_dataset
+
+
+def create_dataset_complete(materials: list[str], tests: list[str], load: bool) -> Dataset:
+    path_dataset = 'dataloaders/complete_dataset_file.pickle'
+    dataset = get_dataset(path_dataset, load)
+    if dataset is None:
+        print(f'-- COMPLETE DATASET CREATION...')
+
+        clean, noisy = create_dataset_separate(materials, tests, load)
+        dataset = torch.utils.data.ConcatDataset([clean, noisy])
+
         with open(path_dataset, 'wb') as file:
-            pickle.dump(dataloader, file)
- 
-    if not plot:
-        return dataloader
-    
-    print(f'-- PLOTTING...')
-    plot_both(materials, dataloader) if both else plot_single(materials, dataloader)
-    print(f'-- PLOTTING DONE')
-    
-    return dataloader
+            pickle.dump(dataset, file)
+
+        print(f'-- DATASET CREATED')
+
+    return dataset
+
+
+def create_dataset(load: bool = True, complete: bool = True) -> Dataset | tuple[Dataset, Dataset]:
+    materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
+                 "pvc", "rose_wood", "steel"]
+    tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
+             "test9.csv", "test10.csv"]
+
+    if complete:
+        return create_dataset_complete(materials, tests, load)
+    return create_dataset_separate(materials, tests, load)
 
 
