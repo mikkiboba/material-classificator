@@ -12,6 +12,12 @@ from debug import debug
 import sys
 import os
 
+def log(learning_rate: float, batch_size: int, avg_accuracy: float, avg_loss: float):
+    log_path = 'results.txt'
+    string = f'{learning_rate=}\t{batch_size=}\t{avg_accuracy=}\t{avg_loss=}\n'
+    with open(log_path, 'a') as file:
+        file.write(string)
+
 
 def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int = 0) -> tuple[torch.Tensor, torch.Tensor]:
     dim_size = tensor.size(dimension)
@@ -34,6 +40,7 @@ def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.CrossEntropyLoss
     for batch_idx, (data, target) in enumerate(dataloader):
         if data.size(0) != batch_size or target.size(0) != batch_size:
             continue
+
         pred = model(data.unsqueeze(1))
         target = target.long()
         loss = loss_fn(pred, target)
@@ -47,7 +54,7 @@ def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.CrossEntropyLoss
             print(f'loss: {loss:>7f} [{current::>5d}/{size:>5d}]')
 
 
-def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss, batch_size: int) -> float:
+def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss, batch_size: int) -> tuple[float, float]:
     model.eval()
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
@@ -65,17 +72,17 @@ def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss,
     test_loss /= num_batches
     correct /= size
     print(f'Test error: \n Accuracy: {(100*correct):>0.1f}%, avg loss: {test_loss:>8f} \n')
-    return 100*correct
+    return 100*correct, test_loss
 
 
-def execute_model(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, complete: bool = True):
+def execute_model(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, complete: bool = True, load_dataset: bool = True):
 
-    dataset = create_dataset(load=True, complete=complete)
+    dataset = create_dataset(load=load_dataset, complete=complete)
 
     train_path = 'datasets/train_dataset_complete.pickle'
     test_path = 'datasets/test_dataset_complete.pickle'
 
-    if os.path.exists(train_path) and os.path.exists(test_path):
+    if load_dataset and os.path.exists(train_path) and os.path.exists(test_path):
         with open(train_path, 'rb') as file:
             train_loader = pickle.load(file)
         with open(test_path, 'rb') as file:
@@ -93,13 +100,10 @@ def execute_model(learning_rate: float, batch_size: int, n_epochs: int, log_inte
     net = Cnn()
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
-
-
-    #TODO: Qui dovrebbe andarci training e test
-    #? come si deve fare il train, devo fare due training diversi per clean e noisy?
-    avg = 0
+    
+    acc, loss = 0, 0
     for epoch in range(n_epochs):
         print(f'Epoch: {epoch+1}\n')
         train(dataloader=train_loader, model=net, loss_fn=criterion, optimizer=optimizer, batch_size=batch_size, log_interval=log_interval)
-        avg += test(dataloader=test_loader, model=net, loss_fn=criterion, batch_size=batch_size)
-    print(f'-- AVG ACCURACY: {avg/n_epochs}%')
+        acc, loss = test(dataloader=test_loader, model=net, loss_fn=criterion, batch_size=batch_size)
+    log(learning_rate=learning_rate, batch_size=batch_size, avg_accuracy=acc/n_epochs, avg_loss=loss)

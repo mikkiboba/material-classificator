@@ -144,7 +144,7 @@ def create_dataset_separate(materials: list[str], tests: list[str], load: bool) 
         with open(path_dataset_noisy, 'wb') as file:
             pickle.dump(noisy_dataset, file)
 
-        print(f'-- DATASET CREATED')
+        print(f'-- SEPARATE DATASETS CREATED')
 
     return clean_dataset, noisy_dataset
 
@@ -161,7 +161,7 @@ def create_dataset_complete(materials: list[str], tests: list[str], load: bool) 
         with open(path_dataset, 'wb') as file:
             pickle.dump(dataset, file)
 
-        print(f'-- DATASET CREATED')
+        print(f'-- COMPLETE DATASET CREATED')
 
     return dataset
 
