@@ -1,6 +1,6 @@
 dataset_file.pickle
-dataloaders/clean_dataset_file.pickle
-dataloaders/complete_dataset_file.pickle
-dataloaders/noisy_dataset_file.pickle
-dataloaders/test_dataset_complete.pickle
-dataloaders/train_dataset_complete.pickle
+datasets/clean_dataset_file.pickle
+datasets/complete_dataset_file.pickle
+datasets/noisy_dataset_file.pickle
+datasets/test_dataset_complete.pickle
+datasets/train_dataset_complete.pickle

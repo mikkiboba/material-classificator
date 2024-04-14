@@ -72,8 +72,8 @@ def execute_model(learning_rate: float, batch_size: int, n_epochs: int, log_inte
 
     dataset = create_dataset(load=True, complete=complete)
 
-    train_path = 'dataloaders/train_dataset_complete.pickle'
-    test_path = 'dataloaders/test_dataset_complete.pickle'
+    train_path = 'datasets/train_dataset_complete.pickle'
+    test_path = 'datasets/test_dataset_complete.pickle'
 
     if os.path.exists(train_path) and os.path.exists(test_path):
         with open(train_path, 'rb') as file:

@@ -115,8 +115,8 @@ def get_dataset(path: str, load: bool) -> DataLoader | None:
 
 
 def create_dataset_separate(materials: list[str], tests: list[str], load: bool) -> tuple[Dataset, Dataset]:
-    path_dataset_clean = 'dataloaders/clean_dataset_file.pickle'
-    path_dataset_noisy = 'dataloaders/noisy_dataset_file.pickle'
+    path_dataset_clean = 'datasets/clean_dataset_file.pickle'
+    path_dataset_noisy = 'datasets/noisy_dataset_file.pickle'
     clean_dataset = get_dataset(path_dataset_clean, load)
     noisy_dataset = get_dataset(path_dataset_noisy, load)
 
@@ -150,7 +150,7 @@ def create_dataset_separate(materials: list[str], tests: list[str], load: bool) 
 
 
 def create_dataset_complete(materials: list[str], tests: list[str], load: bool) -> Dataset:
-    path_dataset = 'dataloaders/complete_dataset_file.pickle'
+    path_dataset = 'datasets/complete_dataset_file.pickle'
     dataset = get_dataset(path_dataset, load)
     if dataset is None:
         print(f'-- COMPLETE DATASET CREATION...')
