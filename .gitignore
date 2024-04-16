@@ -4,3 +4,7 @@ datasets/complete_dataset_file.pickle
 datasets/noisy_dataset_file.pickle
 datasets/test_dataset_complete.pickle
 datasets/train_dataset_complete.pickle
+datasets/test_dataset_clean.pickle
+datasets/test_dataset_noisy.pickle
+datasets/train_dataset_clean.pickle
+datasets/train_dataset_noisy.pickle
