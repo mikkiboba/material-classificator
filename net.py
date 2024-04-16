@@ -11,13 +11,12 @@ class Cnn(nn.Module):
         self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=kernel_size)
         self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=kernel_size)
         self.conv4 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=kernel_size)
+        self.conv5 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=kernel_size)
         self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
-        #self.pool = nn.AdaptiveMaxPool1d(15)
-        self.fc1 = nn.Linear(in_features=128*6, out_features=128)
-        self.fc2 = nn.Linear(in_features=128, out_features=256)
-        self.fc3 = nn.Linear(in_features=256, out_features=128)
-        self.fc4 = nn.Linear(in_features=128, out_features=13)
-        #self.dropout = nn.Dropout1d()
+        self.fc1 = nn.Linear(in_features=256*8, out_features=1024)
+        self.fc2 = nn.Linear(in_features=1024, out_features=512)
+        self.fc3 = nn.Linear(in_features=512, out_features=256)
+        self.fc4 = nn.Linear(in_features=256, out_features=13)
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x: torch.Tensor):
@@ -35,6 +34,10 @@ class Cnn(nn.Module):
         x = self.dropout(x)
 
         x = F.relu(self.conv4(x))
+        x = self.pool(x)
+        x = self.dropout(x)
+        
+        x = F.relu(self.conv5(x))
         x = self.pool(x)
         x = self.dropout(x)
 

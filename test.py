@@ -1,4 +1,22 @@
-l = [22.906282400297183, 18.48681255925616, 22.463836416963755, 23.50619036266155, 26.06328419114997, 28.46291604060745, 30.411230809321303, 32.0047016816274, 34.75585076596382, 38.36749629908905, 35.51765625606423, 34.51189558718348, 36.23787847705435, 40.19050681688391, 37.223124733174025, 39.23187385299482, 45.0768181591364, 45.59134180892765, 43.19725439535155, 48.52268505940863]
+import csv
 
-l = [round(i, 2) for i in l]
-print(l)
+def count_csv_lines(filename):
+    with open(filename, 'r', newline='') as file:
+        reader = csv.reader(file)
+        row_count = sum(1 for row in reader)
+    return row_count
+
+
+materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
+                 "pvc", "rose_wood", "steel"]
+tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
+            "test9.csv", "test10.csv"]
+
+tot = 0
+for m in materials:
+    for t in tests:
+        path = f"complete_dataset/{m}/with/{t}"
+        tot += count_csv_lines(path)
+        path = f"complete_dataset/{m}/without/{t}"
+        tot += count_csv_lines(path)
+print(tot)
