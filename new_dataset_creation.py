@@ -58,11 +58,11 @@ def get_values(collector: list, path: str) -> list:
                 continue
             values = values[1:len(values)-2].split(' ')
             row = []
-            for idx_val, v in enumerate(values):
+            for v in values:
                 try:
                     row.append(float(v))
                 except ValueError:
-                    error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"', f'position: {idx_val}')
+                    error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"')
             if len(row) == 128:
                 collector.append(row)
             else:
@@ -183,7 +183,7 @@ def create_dataset(plot: bool = False, both: bool = False, same_length: bool = T
         clean_dataset, noisy_dataset = fix_length(clean_dataset, noisy_dataset, same=same_length)
 
         dataset = SignalDataset(clean_dataset, noisy_dataset, all_labels)
-        batch_size = 32 #! (16-32) batch size = 32 -> le classi sono 13 (i materiali) quindi non saprei quale sarebbe il 
+        batch_size = 32
         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
         print(f'-- DATASET CREATED')
         with open(path_dataset, 'wb') as file:

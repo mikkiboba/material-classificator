@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
+import numpy as np
 import pickle
 import os
 from debug import debug
@@ -50,61 +50,13 @@ def get_values(collector: list, labels: list, material_idx: int, path: str) -> t
                 try:
                     row.append(float(v))
                 except ValueError:
-                    error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"', f'position: {idx_val}')
+                    error("VALUE  ERROR", f'{file_name}', f'line {idx+1}', f'value: "{v}"')
             if len(row) == 128:
                 collector.append(row)
                 labels.append(material_idx)
             else:
                 error("LENGTH ERROR", f'{file_name}', f'line {idx+1}', f'length: {len(row)}')
     return collector, labels
-
-
-def plot_single(materials: list, dataloader: DataLoader) -> None:
-    """
-    Plot the materials' data one by one (clean and noisy)
-    """
-    def plot(data, title: str, file_name: str) -> None:
-        for i in range(len(labels_dataset)):
-            list_clean = data[i].detach().numpy()
-            for el in list_clean:
-                plt.plot(el)
-            plt.xlabel('subcarrier')
-            plt.ylabel('amplitude')
-            plt.title(f'{materials[labels_dataset[i]]} CLEAN')
-            plt.savefig(f'{path}/{file_name}{i}')
-            plt.close()
-
-    path = 'plots/new/singolo'
-    for clean_data, noisy_data, labels_dataset in dataloader:
-        plot(clean_data, "CLEAN", 'c')
-        plot(noisy_data, "NOISY", 'n')
-
-
-def plot_both(materials: list, dataloader: DataLoader) -> None:
-    """
-    Plot the materials' data putting together clean and noisy in the same plot.
-    """
-    
-    path = 'plots/new/both'
-    for clean_data, noisy_data, labels_dataset in dataloader:
-        for i in range(len(labels_dataset)):
-            figure, axis = plt.subplots(1, 2)
-            figure.set_size_inches(10, 5)
-            list_clean = clean_data[i].detach().numpy()
-            list_noisy = noisy_data[i].detach().numpy()
-            for el in list_clean:
-                axis[0].plot(el)
-            for el in list_noisy:
-                axis[1].plot(el)
-            axis[0].set_xlabel('subcarrier')
-            axis[0].set_ylabel('amplitude')
-            axis[0].set_title(f'{materials[labels_dataset[i]]} CLEAN')
-            axis[1].set_xlabel('subcarrier')
-            axis[1].set_ylabel('amplitude')
-            axis[1].set_title(f'{materials[labels_dataset[i]]} NOISY')
-            plt.savefig(f'{path}/cn{i}')
-            plt.close() 
-
 
 def get_dataset(path: str, load: bool) -> DataLoader | None:
     if load and os.path.exists(path):
@@ -114,7 +66,7 @@ def get_dataset(path: str, load: bool) -> DataLoader | None:
     return None
 
 
-def create_dataset_separate(materials: list[str], tests: list[str], load: bool) -> tuple[Dataset, Dataset]:
+def create_dataset_separate(materials: list[str], tests: list[str], load: bool, fft: bool) -> tuple[Dataset, Dataset]:
     path_dataset_clean = 'datasets/clean_dataset_file.pickle'
     path_dataset_noisy = 'datasets/noisy_dataset_file.pickle'
     clean_dataset = get_dataset(path_dataset_clean, load)
@@ -133,8 +85,14 @@ def create_dataset_separate(materials: list[str], tests: list[str], load: bool) 
                 noisy_path = "complete_dataset/" + str(m) + "/without/" + str(t)
                 noisy, noisy_labels = get_values(noisy, noisy_labels, i, noisy_path)
 
-        clean = torch.tensor(clean)
-        noisy = torch.tensor(noisy)
+        if fft:
+            clean = np.abs(np.fft.rfft(clean, axis=1)).astype(np.float32)
+            noisy = np.abs(np.fft.rfft(noisy, axis=1)).astype(np.float32)
+            clean = torch.from_numpy(clean)
+            noisy = torch.from_numpy(noisy)
+        else:
+            clean = torch.tensor(clean)
+            noisy = torch.tensor(noisy)
 
         clean_dataset = SignalDataset(clean, clean_labels)
         noisy_dataset = SignalDataset(noisy, clean_labels)
@@ -149,13 +107,13 @@ def create_dataset_separate(materials: list[str], tests: list[str], load: bool) 
     return clean_dataset, noisy_dataset
 
 
-def create_dataset_complete(materials: list[str], tests: list[str], load: bool) -> Dataset:
+def create_dataset_complete(materials: list[str], tests: list[str], load: bool, fft: bool) -> Dataset:
     path_dataset = 'datasets/complete_dataset_file.pickle'
     dataset = get_dataset(path_dataset, load)
     if dataset is None:
         print(f'-- COMPLETE DATASET CREATION...')
 
-        clean, noisy = create_dataset_separate(materials, tests, load)
+        clean, noisy = create_dataset_separate(materials, tests, load, fft)
         dataset = torch.utils.data.ConcatDataset([clean, noisy])
 
         with open(path_dataset, 'wb') as file:
@@ -166,14 +124,14 @@ def create_dataset_complete(materials: list[str], tests: list[str], load: bool) 
     return dataset
 
 
-def create_dataset(load: bool = True, complete: bool = True) -> Dataset | tuple[Dataset, Dataset]:
+def create_dataset(load: bool = True, complete: bool = True, fft: bool = True) -> Dataset | tuple[Dataset, Dataset]:
     materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
                  "pvc", "rose_wood", "steel"]
     tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
              "test9.csv", "test10.csv"]
 
     if complete:
-        return create_dataset_complete(materials, tests, load)
-    return create_dataset_separate(materials, tests, load)
+        return create_dataset_complete(materials, tests, load, fft)
+    return create_dataset_separate(materials, tests, load, fft)
 
 

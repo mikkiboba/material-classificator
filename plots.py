@@ -1,50 +1,53 @@
 import matplotlib.pyplot as plt
-import re
-import numpy
+import json
+from last_dataset_creation import create_dataset
+from torch.utils.data import DataLoader
 
-def round_accuracies_in_file(file_path):
-    with open(file_path, 'r') as file:
-        content = file.read()
 
-    def round_accuracy(match):
-        numbers = match.group(1).split(', ')
-        rounded_numbers = [str(round(float(num), 2)) for num in numbers]
-        return 'accuracy=[' + ', '.join(rounded_numbers) + ']'
-
-    updated_content = re.sub(r'accuracy=\[(.*?)\]', round_accuracy, content)
-
-    with open(file_path, 'w') as file:
-        file.write(updated_content)
-
-def extract_accuracy_from_file(file_path):
-    # This function reads the file and extracts accuracy data
-    accuracy_lists = []
-    epochs = []
-
-    # Open the file and read through each line
-    with open(file_path, 'r') as file:
-        content = file.read()
-
-        # Find all occurrences of accuracy lists in the file
-        matches = re.findall(r'epochs=(\d+)\s+accuracy=\[(.*?)\]', content)
+def load(tag: str):
+    
+    accuracies = []
+    with open('results.json', 'r+') as file:
+        data = json.load(file)
         
-        # For each match, convert the string of numbers into a list of floats
-        for epoch, match in matches:
-            accuracy_list = list(map(float, match.split(',')))
-            accuracy_lists.append(accuracy_list)
-            epochs.append(int(epoch))
-
-    return accuracy_lists, epochs
+    for instance in data['training']:
+        accuracies.append(instance[f'{tag}'])
+    return accuracies
 
 
 def plot_results():
-    path = 'results.txt'    
-    
-    acc, ep = extract_accuracy_from_file(path)
-    for idx, a in enumerate(acc):
-        plt.plot(numpy.arange(start=1, stop=ep[idx]+1), a)
-        plt.xlabel("epochs")
-        plt.ylabel("accuracy")
+    acc = load('accuracy')
+    los = load('loss')
+    for a in acc:
+        plt.plot(a)
     plt.savefig('plots/results.png')
+    plt.close()
+    for l in los:
+        plt.plot(l)
+    plt.savefig('plots/losses.png')
     
-plot_results()
+    
+def plot_signals():
+    materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
+                 "pvc", "rose_wood", "steel"]
+    clean, _ = create_dataset(load=False, complete=False, fft=False)
+    loader = DataLoader(clean, batch_size=64, shuffle=False)
+    signals_by_label = {i: [] for i in range(13)}
+
+    # Collect signals for each label
+    for signals, labels in loader:
+        for signal, label in zip(signals, labels):
+            signals_by_label[label.item()].append(signal.squeeze())  # Adjust depending on the shape of your signal
+
+    # Function to plot and save figures for each label
+    def plot_signals_for_label(label, signals):
+        plt.figure(figsize=(10, 5))  # Adjust the size as needed
+        for signal in signals:
+            plt.plot(signal.numpy(), label=f'Signal for Label {materials[label]}')  # Adjust if the signal needs more preprocessing
+        plt.title(f'Signals for Label {materials[label]}')
+        plt.savefig(f'plots/last/clean-{materials[label]}.png')  # Save each plot to a file
+        plt.close()  # Close the figure to free up memory
+        # Generate and save plots for each label
+    for label, signals in signals_by_label.items():
+        plot_signals_for_label(label, signals)
+plot_signals()

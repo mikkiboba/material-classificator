@@ -10,30 +10,35 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, random_split, Dataset
 
-from net import Cnn
+from net import Cnn, Cnn2
 from last_dataset_creation import create_dataset
 
 from debug import debug
 import sys
 import os
-
-def log(learning_rate: float, batch_size: int, epochs: int, accuracy: list[float], loss: list[float], train_dataset: str = "", test_dataset: str = ""):
-    log_path = 'results.txt'
-    avg_accuracy = sum(accuracy)/epochs
-    avg_loss = sum(loss)/epochs
-    string = f'{train_dataset=}\t{test_dataset=}\t{learning_rate=}\t{batch_size=}\t{epochs=}\t{accuracy=}\t{avg_accuracy=}\t{loss=}\t{avg_loss=}\n'
-    with open(log_path, 'a') as file:
-        file.write(string)
+import json
 
 
-def split_tensor(tensor: torch.Tensor, split_ratio: float = 0.8, dimension: int = 0) -> tuple[torch.Tensor, torch.Tensor]:
-    dim_size = tensor.size(dimension)
-    split_size = int(dim_size * split_ratio)
-
-    tensor1 = tensor.narrow(dimension, 0, split_size)
-    tensor2 = tensor.narrow(dimension, split_size, dim_size - split_size)
-
-    return tensor1, tensor2
+def log(learning_rate: float, batch_size: int, epochs: int, accuracy: list[float], loss: list[float], fft: bool, train_dataset: str = "", test_dataset: str = ""):
+    log_path = 'results.json'
+        
+    instance = {
+        "train_dataset": train_dataset,
+        "test_dataset": test_dataset,
+        "learning_rate": learning_rate,
+        "batch_size": batch_size,
+        "epochs": epochs,
+        "fft": fft,
+        "accuracy": accuracy,
+        "max_accuracy": max(accuracy),
+        "loss": loss
+    }
+    
+    with open(log_path, 'r+') as file:
+        data = json.load(file)
+        data['training'].append(instance)
+        file.seek(0)
+        json.dump(data, file, indent=4)
 
 
 def get_loaders(train_path: str, test_path:str) -> tuple[DataLoader, DataLoader]:
@@ -57,21 +62,6 @@ def make_loaders(dataset: Dataset, batch_size: int, train_path: str, test_path: 
     return train_loader, test_loader
 
 
-def execute_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int) -> tuple[list[float], list[float]]:
-    net = Cnn()
-    optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
-    criterion = nn.CrossEntropyLoss()
-    
-    accuracy, loss = [], []
-    for epoch in range(n_epochs):
-        print(f'Epoch: {epoch+1}\n')
-        train(dataloader=train_loader, model=net, loss_fn=criterion, optimizer=optimizer, batch_size=batch_size, log_interval=log_interval)
-        acc, lo = test(dataloader=test_loader, model=net, loss_fn=criterion, batch_size=batch_size)
-        accuracy.append(round(acc, 2))
-        loss.append(lo)
-    
-    return accuracy, loss
-
 def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.CrossEntropyLoss, optimizer: torch.optim.Optimizer,
           batch_size: int, log_interval: int = 3200):
 
@@ -83,8 +73,7 @@ def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.CrossEntropyLoss
     for batch_idx, (data, target) in enumerate(dataloader):
         if data.size(0) != batch_size or target.size(0) != batch_size:
             continue
-
-        pred = model(data.unsqueeze(1))
+        pred = model(data)
         target = target.long()
         loss = loss_fn(pred, target)
         loss.backward()
@@ -107,7 +96,8 @@ def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss,
         for data, target in dataloader:
             if data.size(0) != batch_size or target.size(0) != batch_size:
                 continue
-            pred = model(data.unsqueeze(1))
+            #pred = model(data.unsqueeze(1))
+            pred = model(data)
             target = target.long()
             test_loss += loss_fn(pred, target).item()
             correct += (pred.argmax(1) == target).float().sum().item()
@@ -118,9 +108,49 @@ def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss,
     return 100*correct, test_loss
 
 
-def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+def run_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int, fft: bool) -> tuple[list[float], list[float]]:
+    net = Cnn2(fft=fft)
+    optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
+    
+    accuracy, loss = [], []
+    for epoch in range(n_epochs):
+        print(f'Epoch: {epoch+1}\n')
+        train(dataloader=train_loader, model=net, loss_fn=criterion, optimizer=optimizer, batch_size=batch_size, log_interval=log_interval)
+        acc, lo = test(dataloader=test_loader, model=net, loss_fn=criterion, batch_size=batch_size)
+        accuracy.append(round(acc, 2))
+        loss.append(lo)
+    
+    return accuracy, loss
 
-    dataset = create_dataset(load=load_dataset, complete=True)
+
+'''
+def execute_model(train_dataset: str, test_dataset: str, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+    train_path = f'datasets/train_dataset_{train_dataset.lower()}.pickle'
+    test_path = f'datasets/test_dataset_{test_dataset.lower()}.pickle'
+    
+    def find_dataset(dataset_name: str) -> Dataset:
+        if dataset_name == 'clean':
+            dataset, _ = create_dataset(load=load_dataset, complete=False, fft=fft)
+        elif dataset_name == 'noisy':
+            _, dataset = create_dataset(load=load_dataset, complete=False, fft=fft)
+        else:
+            dataset = create_dataset(load=load_dataset, complete=True, fft=fft)
+        return dataset
+    
+    if load_dataset and os.path.exists(train_path) and os.path.exists(test_path):
+        train_loader, test_loader = get_loaders(train_path, test_path)
+    else:
+        tr_dataset = find_dataset(train_dataset)
+        te_dataset = find_dataset(test_dataset)
+        
+        train_loader, _ = make_loaders(tr_dataset, batch_size=batch_size, train_path=train_path)
+'''        
+    
+
+def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+
+    dataset = create_dataset(load=load_dataset, complete=True, fft=fft)
 
     train_path = 'datasets/train_dataset_complete.pickle'
     test_path = 'datasets/test_dataset_complete.pickle'
@@ -130,12 +160,13 @@ def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int,
     else:
         train_loader, test_loader = make_loaders(dataset, batch_size=batch_size, train_path=train_path, test_path=test_path)
     
-    accuracy, loss = execute_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
-    log(train_dataset="complete", test_dataset="complete", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
+    log(train_dataset="complete", test_dataset="complete", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
 
-def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
 
-    clean, _ = create_dataset(load=load_dataset, complete=False)
+def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+
+    clean, _ = create_dataset(load=load_dataset, complete=False, fft=fft)
 
     train_path = 'datasets/train_dataset_clean.pickle'
     test_path = 'datasets/test_dataset_clean.pickle'
@@ -145,13 +176,13 @@ def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: i
     else:
         train_loader, test_loader = make_loaders(clean, batch_size, train_path, test_path)
     
-    accuracy, loss = execute_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
-    log(train_dataset="clean", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
+    log(train_dataset="clean", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
 
 
-def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
 
-    _, noisy = create_dataset(load=load_dataset, complete=False)
+    _, noisy = create_dataset(load=load_dataset, complete=False, fft=True)
 
     train_path = 'datasets/train_dataset_noisy.pickle'
     test_path = 'datasets/test_dataset_noisy.pickle'
@@ -161,6 +192,6 @@ def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: i
     else:
         train_loader, test_loader = make_loaders(noisy, batch_size, train_path, test_path)
     
-    accuracy, loss = execute_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
-    log(train_dataset="noisy", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
-
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
+    log(train_dataset="noisy", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    
