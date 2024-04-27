@@ -121,6 +121,9 @@ def run_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: 
         accuracy.append(round(acc, 2))
         loss.append(lo)
     
+    path_model = 'model.pth'
+    torch.save(net.state_dict(), path_model)
+    
     return accuracy, loss
 
 
@@ -195,3 +198,44 @@ def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: i
     accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
     log(train_dataset="noisy", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
     
+
+def execute_model_clean_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+    clean, noisy = create_dataset(load=load_dataset, complete=False, fft=fft)
+    
+    clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
+    noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
+    
+    accuracy, loss = run_model(train_loader=clean_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
+    log(train_dataset="clean", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+
+
+def execute_model_noisy_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+    clean, noisy = create_dataset(load=load_dataset, complete=False, fft=fft)
+    
+    clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
+    noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
+    
+    accuracy, loss = run_model(train_loader=noisy_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
+    log(train_dataset="noisy", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+
+
+def execute_model_complete_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+    complete = create_dataset(load=load_dataset, complete=True, fft=fft)
+    clean, _ = create_dataset(load=True, complete=False, fft=fft)
+    
+    complete_loader = DataLoader(complete, batch_size=batch_size, shuffle=True)    
+    clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
+    
+    accuracy, loss = run_model(train_loader=complete_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
+    log(train_dataset="complete", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+
+
+def execute_model_complete_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+    complete = create_dataset(load=load_dataset, complete=True, fft=fft)
+    _, noisy = create_dataset(load=True, complete=False, fft=fft)
+    
+    complete_loader = DataLoader(complete, batch_size=batch_size, shuffle=True)    
+    noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
+    
+    accuracy, loss = run_model(train_loader=complete_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
+    log(train_dataset="complete", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)

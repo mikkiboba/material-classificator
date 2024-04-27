@@ -6,9 +6,7 @@ import os
 from debug import debug
 from sys import exit
 
-# TODO: devo restituire 2 tipi di dataset
-# TODO: 1. dataset clean e dataset noisy
-# TODO: 2. dataset clean + noisy
+# TODO: vedere come salvare un modello
 
 
 class SignalDataset(Dataset):

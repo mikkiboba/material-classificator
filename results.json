@@ -870,6 +870,333 @@
                 0.3941282397701031,
                 0.38707297017025416
             ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                93.67,
+                97.45
+            ],
+            "max_accuracy": 97.45,
+            "loss": [
+                0.19387589114273124,
+                0.0816675730031259
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                95.91,
+                98.25
+            ],
+            "max_accuracy": 98.25,
+            "loss": [
+                0.14843544440526177,
+                0.05930430322844878
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                94.04,
+                97.68
+            ],
+            "max_accuracy": 97.68,
+            "loss": [
+                0.17316949277078073,
+                0.06354161900341024
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                27.23,
+                24.72
+            ],
+            "max_accuracy": 27.23,
+            "loss": [
+                2.2791454897725525,
+                2.1460853868769054
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                31.53,
+                36.15
+            ],
+            "max_accuracy": 36.15,
+            "loss": [
+                1.8746498798837468,
+                1.6603833337974414
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                69.56,
+                85.16
+            ],
+            "max_accuracy": 85.16,
+            "loss": [
+                0.8133117090976213,
+                0.49126528869373204
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                98.58,
+                99.77
+            ],
+            "max_accuracy": 99.77,
+            "loss": [
+                0.043125964066830974,
+                0.0060126788818331
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "noisy",
+            "learning_rate": 0.0001,
+            "batch_size": 32,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                3.34,
+                0.47
+            ],
+            "max_accuracy": 3.34,
+            "loss": [
+                29.79718746701953,
+                21.144694315753476
+            ]
+        },
+        {
+            "train_dataset": "noisy",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 32,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                8.04,
+                7.95
+            ],
+            "max_accuracy": 8.04,
+            "loss": [
+                23.665049338282014,
+                29.8754220182398
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "noisy",
+            "learning_rate": 0.0001,
+            "batch_size": 32,
+            "epochs": 2,
+            "fft": true,
+            "accuracy": [
+                5.17,
+                5.01
+            ],
+            "max_accuracy": 5.17,
+            "loss": [
+                28.89719421232242,
+                33.12573944769201
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "noisy",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 20,
+            "fft": true,
+            "accuracy": [
+                4.64,
+                4.43,
+                4.67,
+                4.82,
+                4.5,
+                4.59,
+                4.83,
+                5.39,
+                4.33,
+                4.5,
+                4.31,
+                5.05,
+                4.94,
+                4.73,
+                4.24,
+                4.64,
+                4.68,
+                5.75,
+                4.6,
+                4.46
+            ],
+            "max_accuracy": 5.75,
+            "loss": [
+                30.735711307173585,
+                36.67745233056269,
+                37.61575183194327,
+                33.83468031463645,
+                32.9622828436778,
+                40.7312142051056,
+                36.985038511707714,
+                36.99789102341181,
+                39.6538743829502,
+                45.99780715165143,
+                36.595073710594555,
+                39.65436101966123,
+                34.93645806584786,
+                39.79790202441143,
+                37.97970704135848,
+                46.34417068594975,
+                48.00210146863738,
+                46.386859902258955,
+                46.612623232187744,
+                55.77963971470811
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "noisy",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 20,
+            "fft": false,
+            "accuracy": [
+                3.9,
+                3.32,
+                2.26,
+                3.38,
+                2.79,
+                2.59,
+                3.35,
+                2.87,
+                1.86,
+                1.55,
+                0.03,
+                2.0,
+                1.7,
+                0.82,
+                1.43,
+                0.12,
+                0.5,
+                0.05,
+                1.03,
+                0.23
+            ],
+            "max_accuracy": 3.9,
+            "loss": [
+                42.70501728688277,
+                37.003967281881366,
+                38.1366198435074,
+                34.556585341636534,
+                29.940013630602692,
+                27.822275152737227,
+                29.536375931087424,
+                26.356332158885436,
+                26.756226591327735,
+                27.693979031334518,
+                24.764759662752073,
+                27.609270337075188,
+                23.84160067817141,
+                33.728388210891026,
+                32.83884203664256,
+                24.940690711257897,
+                25.009978750536995,
+                29.182403036104727,
+                27.19216658264326,
+                29.746044368801208
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                91.58,
+                96.78
+            ],
+            "max_accuracy": 96.78,
+            "loss": [
+                0.23303001068327983,
+                0.103455121528664
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                99.46,
+                99.78
+            ],
+            "max_accuracy": 99.78,
+            "loss": [
+                0.02077038745506192,
+                0.00685231182396845
+            ]
+        },
+        {
+            "train_dataset": "clean",
+            "test_dataset": "clean",
+            "learning_rate": 0.0001,
+            "batch_size": 64,
+            "epochs": 2,
+            "fft": false,
+            "accuracy": [
+                99.09,
+                99.82
+            ],
+            "max_accuracy": 99.82,
+            "loss": [
+                0.028340753043771878,
+                0.0055941194740364315
+            ]
         }
     ]
 }

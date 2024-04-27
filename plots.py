@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import json
 from last_dataset_creation import create_dataset
 from torch.utils.data import DataLoader
+import os
+import numpy as np
 
 
 def load(tag: str):
@@ -28,26 +30,54 @@ def plot_results():
     
     
 def plot_signals():
-    materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
-                 "pvc", "rose_wood", "steel"]
-    clean, _ = create_dataset(load=False, complete=False, fft=False)
-    loader = DataLoader(clean, batch_size=64, shuffle=False)
-    signals_by_label = {i: [] for i in range(13)}
+    materials = [ "empty","acrylic", "pine", "copper", "aluminium" , "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp", "pvc", "rose_wood", "steel"]
+    shield = ["with", "without"]
+    tests = ["test1.csv","test2.csv","test3.csv","test4.csv","test5.csv","test6.csv","test7.csv","test8.csv","test9.csv","test10.csv"]
+    base = 'complete_dataset2'
+    plot_path = os.path.join('plots', 'preprocessed')
+    os.makedirs(plot_path, exist_ok=True)
 
-    # Collect signals for each label
-    for signals, labels in loader:
-        for signal, label in zip(signals, labels):
-            signals_by_label[label.item()].append(signal.squeeze())  # Adjust depending on the shape of your signal
+    for m in materials:
+        for s in shield:
+            for i, t in enumerate(tests):
+                path = os.path.join(base, m, s, t)
+                with open(path, 'r') as file:
+                    for line in file:
+                        values = [float(v) for v in line.split(' ')]
+                        plt.plot(values)
+            plt.savefig(f'{plot_path}/{m}{s.capitalize()}{i}.png')
+            plt.close()
 
-    # Function to plot and save figures for each label
-    def plot_signals_for_label(label, signals):
-        plt.figure(figsize=(10, 5))  # Adjust the size as needed
-        for signal in signals:
-            plt.plot(signal.numpy(), label=f'Signal for Label {materials[label]}')  # Adjust if the signal needs more preprocessing
-        plt.title(f'Signals for Label {materials[label]}')
-        plt.savefig(f'plots/last/clean-{materials[label]}.png')  # Save each plot to a file
-        plt.close()  # Close the figure to free up memory
-        # Generate and save plots for each label
-    for label, signals in signals_by_label.items():
-        plot_signals_for_label(label, signals)
-plot_signals()
+
+def plot_signals_gpt():
+    materials = [ "empty","acrylic", "pine", "copper", "aluminium" , "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp", "pvc", "rose_wood", "steel"]
+    shield = ["with", "without"]
+    tests = ["test1.csv","test2.csv","test3.csv","test4.csv","test5.csv","test6.csv","test7.csv","test8.csv","test9.csv","test10.csv"]
+    base = 'complete_dataset2'
+    plot_path = os.path.join('plots', 'preprocessed')
+    os.makedirs(plot_path, exist_ok=True)
+    
+    for m in materials:
+        for s in shield:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+            ax1.set_title('CSI Amplitude')
+            ax2.set_title('CSI Phase')
+            ax1.set_ylabel('Amplitude')
+            ax2.set_ylabel('Phase (radians)')
+            ax2.set_xlabel('Subcarrier Index')
+            for i, t in enumerate(tests):
+                csv_file = os.path.join(base, m, s, t)
+                with open(csv_file, 'r') as file:
+                    for line in file:
+                        values = np.array(line.split(), dtype=float)
+                        num_values = len(values) // 2
+                        amplitudes = values[:num_values]
+                        phases = values[num_values:]
+                        ax1.plot(amplitudes, label=f'Signal {i+1}')
+                        ax2.plot(phases, label=f'Signal {i+1}')
+            plt.tight_layout()
+            plt.savefig(f'plots/preprocessed/{m}{s.capitalize()}')
+            plt.close()
+
+
+plot_signals_gpt()

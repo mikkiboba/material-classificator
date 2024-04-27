@@ -7,3 +7,8 @@ def debug(*args: any) -> None:
     for i in args:
         ret += str(i) + " "
     print(f'>- DEBUG {ret}')
+
+
+def debugg(*args: any) -> None:
+    debug(args)
+    exit()
