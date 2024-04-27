@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import json
-from last_dataset_creation import create_dataset
+from dataset_creation import create_dataset
 from torch.utils.data import DataLoader
 import os
 import numpy as np

@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split, Dataset
 
 from net import Cnn, Cnn2
-from last_dataset_creation import create_dataset
+from dataset_creation import create_dataset
 
 from debug import debug
 import sys
