@@ -59,7 +59,7 @@ def plot_signals_gpt():
     
     for m in materials:
         for s in shield:
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+            _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
             ax1.set_title('CSI Amplitude')
             ax2.set_title('CSI Phase')
             ax1.set_ylabel('Amplitude')
