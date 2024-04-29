@@ -19,7 +19,7 @@ import os
 import json
 
 
-def log(learning_rate: float, batch_size: int, epochs: int, accuracy: list[float], loss: list[float], fft: bool, train_dataset: str = "", test_dataset: str = ""):
+def log(learning_rate: float, batch_size: int, epochs: int, accuracy: list[float], loss: list[float], train_dataset: str = "", test_dataset: str = ""):
     log_path = 'results.json'
         
     instance = {
@@ -28,7 +28,6 @@ def log(learning_rate: float, batch_size: int, epochs: int, accuracy: list[float
         "learning_rate": learning_rate,
         "batch_size": batch_size,
         "epochs": epochs,
-        "fft": fft,
         "accuracy": accuracy,
         "max_accuracy": max(accuracy),
         "loss": loss
@@ -108,8 +107,8 @@ def test(model: nn.Module, dataloader: DataLoader, loss_fn: nn.CrossEntropyLoss,
     return 100*correct, test_loss
 
 
-def run_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int, fft: bool) -> tuple[list[float], list[float]]:
-    net = Cnn2(fft=fft)
+def run_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int) -> tuple[list[float], list[float]]:
+    net = Cnn2()
     optimizer = optim.AdamW(net.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
     
@@ -128,17 +127,17 @@ def run_model(train_loader: DataLoader, test_loader: DataLoader, learning_rate: 
 
 
 '''
-def execute_model(train_dataset: str, test_dataset: str, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+def execute_model(train_dataset: str, test_dataset: str, learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
     train_path = f'datasets/train_dataset_{train_dataset.lower()}.pickle'
     test_path = f'datasets/test_dataset_{test_dataset.lower()}.pickle'
     
     def find_dataset(dataset_name: str) -> Dataset:
         if dataset_name == 'clean':
-            dataset, _ = create_dataset(load=load_dataset, complete=False, fft=fft)
+            dataset, _ = create_dataset(load=load_dataset, complete=False)
         elif dataset_name == 'noisy':
-            _, dataset = create_dataset(load=load_dataset, complete=False, fft=fft)
+            _, dataset = create_dataset(load=load_dataset, complete=False)
         else:
-            dataset = create_dataset(load=load_dataset, complete=True, fft=fft)
+            dataset = create_dataset(load=load_dataset, complete=True)
         return dataset
     
     if load_dataset and os.path.exists(train_path) and os.path.exists(test_path):
@@ -151,9 +150,9 @@ def execute_model(train_dataset: str, test_dataset: str, learning_rate: float, b
 '''        
     
 
-def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
 
-    dataset = create_dataset(load=load_dataset, complete=True, fft=fft)
+    dataset = create_dataset(load=load_dataset, complete=True)
 
     train_path = 'datasets/train_dataset_complete.pickle'
     test_path = 'datasets/test_dataset_complete.pickle'
@@ -163,13 +162,13 @@ def execute_model_complete(learning_rate: float, batch_size: int, n_epochs: int,
     else:
         train_loader, test_loader = make_loaders(dataset, batch_size=batch_size, train_path=train_path, test_path=test_path)
     
-    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
-    log(train_dataset="complete", test_dataset="complete", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
+    log(train_dataset="complete", test_dataset="complete", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
 
 
-def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
 
-    clean, _ = create_dataset(load=load_dataset, complete=False, fft=fft)
+    clean, _ = create_dataset(load=load_dataset, complete=False)
 
     train_path = 'datasets/train_dataset_clean.pickle'
     test_path = 'datasets/test_dataset_clean.pickle'
@@ -179,13 +178,13 @@ def execute_model_clean_clean(learning_rate: float, batch_size: int, n_epochs: i
     else:
         train_loader, test_loader = make_loaders(clean, batch_size, train_path, test_path)
     
-    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
-    log(train_dataset="clean", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
+    log(train_dataset="clean", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
 
 
-def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
+def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
 
-    _, noisy = create_dataset(load=load_dataset, complete=False, fft=True)
+    _, noisy = create_dataset(load=load_dataset, complete=False)
 
     train_path = 'datasets/train_dataset_noisy.pickle'
     test_path = 'datasets/test_dataset_noisy.pickle'
@@ -195,47 +194,47 @@ def execute_model_noisy_noisy(learning_rate: float, batch_size: int, n_epochs: i
     else:
         train_loader, test_loader = make_loaders(noisy, batch_size, train_path, test_path)
     
-    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval, fft)
-    log(train_dataset="noisy", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader, test_loader, learning_rate, batch_size, n_epochs, log_interval)
+    log(train_dataset="noisy", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
     
 
-def execute_model_clean_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
-    clean, noisy = create_dataset(load=load_dataset, complete=False, fft=fft)
-    
-    clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
-    noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
-    
-    accuracy, loss = run_model(train_loader=clean_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
-    log(train_dataset="clean", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
-
-
-def execute_model_noisy_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
-    clean, noisy = create_dataset(load=load_dataset, complete=False, fft=fft)
+def execute_model_clean_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+    clean, noisy = create_dataset(load=load_dataset, complete=False)
     
     clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
     noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
     
-    accuracy, loss = run_model(train_loader=noisy_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
-    log(train_dataset="noisy", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader=clean_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval)
+    log(train_dataset="clean", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
 
 
-def execute_model_complete_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
-    complete = create_dataset(load=load_dataset, complete=True, fft=fft)
-    clean, _ = create_dataset(load=True, complete=False, fft=fft)
+def execute_model_noisy_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+    clean, noisy = create_dataset(load=load_dataset, complete=False)
+    
+    clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
+    noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
+    
+    accuracy, loss = run_model(train_loader=noisy_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval)
+    log(train_dataset="noisy", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
+
+
+def execute_model_complete_clean(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+    complete = create_dataset(load=load_dataset, complete=True)
+    clean, _ = create_dataset(load=True, complete=False)
     
     complete_loader = DataLoader(complete, batch_size=batch_size, shuffle=True)    
     clean_loader = DataLoader(clean, batch_size=batch_size, shuffle=True)
     
-    accuracy, loss = run_model(train_loader=complete_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
-    log(train_dataset="complete", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader=complete_loader, test_loader=clean_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval)
+    log(train_dataset="complete", test_dataset="clean", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)
 
 
-def execute_model_complete_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True, fft: bool = True):
-    complete = create_dataset(load=load_dataset, complete=True, fft=fft)
-    _, noisy = create_dataset(load=True, complete=False, fft=fft)
+def execute_model_complete_noisy(learning_rate: float, batch_size: int, n_epochs: int, log_interval: int = 3200, load_dataset: bool = True):
+    complete = create_dataset(load=load_dataset, complete=True)
+    _, noisy = create_dataset(load=True, complete=False)
     
     complete_loader = DataLoader(complete, batch_size=batch_size, shuffle=True)    
     noisy_loader = DataLoader(noisy, batch_size=batch_size, shuffle=True)
     
-    accuracy, loss = run_model(train_loader=complete_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval, fft=fft)
-    log(train_dataset="complete", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss, fft=fft)
+    accuracy, loss = run_model(train_loader=complete_loader, test_loader=noisy_loader, learning_rate=learning_rate, batch_size=batch_size, n_epochs=n_epochs, log_interval=log_interval)
+    log(train_dataset="complete", test_dataset="noisy", learning_rate=learning_rate, batch_size=batch_size, epochs=n_epochs, accuracy=accuracy, loss=loss)

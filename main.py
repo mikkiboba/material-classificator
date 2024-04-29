@@ -7,7 +7,6 @@ def main() -> None:
         batch_size=64,
         n_epochs=120,
         load_dataset=False,
-        fft=False
     )
 
 if __name__ == "__main__":

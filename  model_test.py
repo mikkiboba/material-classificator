@@ -16,7 +16,7 @@ def extract_values():
 
 
 
-model = Cnn2(fft=False)
+model = Cnn2()
 
 model.load_state_dict(torch.load('model.pth'))
 
