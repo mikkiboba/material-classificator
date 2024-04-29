@@ -1,13 +1,17 @@
 import time
 import training
 
+
 def main() -> None:
-    training.execute_model_complete(
+    training.execute_model(
+        train_name='complete',
+        test_name='complete',
         learning_rate=0.0001,
         batch_size=64,
         n_epochs=120,
-        load_dataset=False,
+        load_dataset=False
     )
+
 
 if __name__ == "__main__":
     now = time.time()

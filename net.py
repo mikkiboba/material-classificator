@@ -55,7 +55,7 @@ class Cnn(nn.Module):
 
 
 class Cnn2(nn.Module):
-    def __init__(self, fft: bool, kernel_size: int = 3):
+    def __init__(self, kernel_size: int = 3):
         super(Cnn2, self).__init__()
         self.conv1 = nn.Conv1d(1, 16, kernel_size=kernel_size)
         self.conv2 = nn.Conv1d(16, 32, kernel_size=kernel_size)
@@ -89,11 +89,8 @@ class Cnn2(nn.Module):
         x = x.view(x.size(0), -1)
         
         x = F.relu(self.fc1(x))
-
         x = F.relu(self.fc2(x))
-
         x = F.relu(self.fc3(x))
-
         x = self.fc4(x)
         
         return x

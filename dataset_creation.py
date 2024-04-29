@@ -6,8 +6,6 @@ import os
 from debug import debug
 from sys import exit
 
-# TODO: vedere come salvare un modello
-
 
 class SignalDataset(Dataset):
     def __init__(self, clean_data, labels):
@@ -32,7 +30,8 @@ def error(name: str, file: str, *args) -> None:
 
 def get_values(collector: list, labels: list, material_idx: int, path: str) -> tuple[list, list]:
     """
-    Get the signal values from a file
+    Get the signal values from a file.\n
+    This has to be changed if the data gets preprocessed.
     """
     file_name = path[path.find('/')+1:]
     with open(path, 'r') as file:
@@ -56,73 +55,71 @@ def get_values(collector: list, labels: list, material_idx: int, path: str) -> t
                 error("LENGTH ERROR", f'{file_name}', f'line {idx+1}', f'length: {len(row)}')
     return collector, labels
 
-def get_dataset(path: str, load: bool) -> DataLoader | None:
-    if load and os.path.exists(path):
+
+def get_dataset(path: str) -> Dataset | None:
+    if os.path.exists(path):
         with open(path, 'rb') as file:
             print(f'-- DATASET LOADED')
             return pickle.load(file)
     return None
 
 
-def create_dataset_separate(materials: list[str], tests: list[str], load: bool) -> tuple[Dataset, Dataset]:
-    path_dataset_clean = 'datasets/clean_dataset_file.pickle'
-    path_dataset_noisy = 'datasets/noisy_dataset_file.pickle'
-    clean_dataset = get_dataset(path_dataset_clean, load)
-    noisy_dataset = get_dataset(path_dataset_noisy, load)
+def create_dataset_complete(materials: list[str], tests: list[str], dataset_path: str, load: bool) -> Dataset:
+    if load:
+        return get_dataset(dataset_path)
 
-    if clean_dataset is None or noisy_dataset is None:
-        print(f'-- SEPARATE DATASET CREATION...')
+    clean = create_dataset_single(materials, tests, 'with',
+                                  'datasets/clean_dataset_file.pickle', load=load)
+    noisy = create_dataset_single(materials, tests, 'without',
+                                  'datasets/noisy_dataset_file.pickle', load=load)
+    dataset = torch.utils.data.ConcatDataset([clean, noisy])
 
-        clean_labels, noisy_labels = [], []
-        clean, noisy = [], []
-
-        for i, m in enumerate(materials):
-            for t in tests:
-                clean_path = "complete_dataset/" + str(m) + "/with/" + str(t)
-                clean, clean_labels = get_values(clean, clean_labels, i, clean_path)
-                noisy_path = "complete_dataset/" + str(m) + "/without/" + str(t)
-                noisy, noisy_labels = get_values(noisy, noisy_labels, i, noisy_path)
-        clean = torch.tensor(clean)
-        noisy = torch.tensor(noisy)
-
-        clean_dataset = SignalDataset(clean, clean_labels)
-        noisy_dataset = SignalDataset(noisy, clean_labels)
-
-        with open(path_dataset_clean, 'wb') as file:
-            pickle.dump(clean_dataset, file)
-        with open(path_dataset_noisy, 'wb') as file:
-            pickle.dump(noisy_dataset, file)
-
-        print(f'-- SEPARATE DATASETS CREATED')
-
-    return clean_dataset, noisy_dataset
-
-
-def create_dataset_complete(materials: list[str], tests: list[str], load: bool) -> Dataset:
-    path_dataset = 'datasets/complete_dataset_file.pickle'
-    dataset = get_dataset(path_dataset, load)
-    if dataset is None:
-        print(f'-- COMPLETE DATASET CREATION...')
-
-        clean, noisy = create_dataset_separate(materials, tests, load)
-        dataset = torch.utils.data.ConcatDataset([clean, noisy])
-
-        with open(path_dataset, 'wb') as file:
-            pickle.dump(dataset, file)
-
-        print(f'-- COMPLETE DATASET CREATED')
+    with open(dataset_path, 'wb') as file:
+        pickle.dump(dataset, file)
 
     return dataset
 
 
-def create_dataset(load: bool = True, complete: bool = True) -> Dataset | tuple[Dataset, Dataset]:
+def create_dataset_single(materials: list[str], tests: list[str], shield: str, dataset_path: str, load: bool) -> Dataset:
+    if load:
+        return get_dataset(dataset_path)
+
+    signals, labels = [], []
+
+    for i, m in enumerate(materials):
+        for t in tests:
+            path = f'complete_dataset/{str(m)}/{shield}/{str(t)}'
+            signals, labels = get_values(signals, labels, i, path)
+    signals = torch.tensor(signals)
+
+    dataset = SignalDataset(signals, labels)
+
+    with open(dataset_path, 'wb') as file:
+        pickle.dump(dataset, file)
+
+    return dataset
+
+
+def create_dataset(dataset_name: str, load: bool) -> Dataset:
     materials = ["empty", "acrylic", "aluminium", "brass", "copper", "lignum_vitae", "nylon", "oak", "pine", "pp",
                  "pvc", "rose_wood", "steel"]
     tests = ["test1.csv", "test2.csv", "test3.csv", "test4.csv", "test5.csv", "test6.csv", "test7.csv", "test8.csv",
              "test9.csv", "test10.csv"]
 
-    if complete:
-        return create_dataset_complete(materials, tests, load)
-    return create_dataset_separate(materials, tests, load)
+    dataset_name = dataset_name.lower()
+    path_dataset = f'datasets/{dataset_name}_dataset_file.pickle'
+    dataset = None
+    if dataset is None:
+        print(f'-- {dataset_name.upper()} DATASET CREATION...')
+        if dataset_name == 'clean':
+            dataset = create_dataset_single(materials, tests, 'with', path_dataset, load)
+        elif dataset_name == 'noisy':
+            dataset = create_dataset_single(materials, tests, 'without', path_dataset, load)
+        elif dataset_name == 'complete':
+            dataset = create_dataset_complete(materials, tests, path_dataset, load)
+        else:
+            raise ValueError(f"dataset_name not in ['clean', 'noisy', 'complete']")
+        print(f'-- {dataset_name.upper()} DATASET CREATED.')
 
+    return dataset
 
